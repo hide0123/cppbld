@@ -1,8 +1,7 @@
-import glob
 import json
 import os
-import sys
 from pathlib import Path
+from typing import Any
 
 # name of output file
 KEY_OUTPUT = "output"
@@ -51,13 +50,15 @@ g_default_context = {
 }
 
 
-def dict_writer(dist: dict, src: dict, overWrite=False, mix=False) -> dict:
+def dict_writer(
+    dist: dict, src: dict, over_write: bool = False, mix: bool = False
+) -> dict:
     for k in src.keys():
-        if not overWrite and k in dist.keys():
+        if not over_write and k in dist.keys():
             continue
 
         if mix and k in dist.keys() and type(dist[k]) is type(src[k]) is dict:
-            dist[k] = dict_writer(dist[k], src[k], overWrite, mix)
+            dist[k] = dict_writer(dist[k], src[k], over_write, mix)
         else:
             dist[k] = src[k]
 
@@ -95,10 +96,9 @@ class Builder:
             tmp = tmp.replace(" \\\n  ", " ")
             return tmp[tmp.find(":") + 2 : tmp.find("\n\n")].strip().split(" ")
 
-    def get_all_sources(self) -> list:
-        return glob.glob(
-            f"{self.context[KEY_FOLDERS][KEY_FOLDERS_SOURCE]}/**/*.cpp", recursive=True
-        )
+    def get_all_sources(self) -> list[Path]:
+        path = Path(self.context[KEY_FOLDERS][KEY_FOLDERS_SOURCE])
+        return list(path.glob("**/*.cpp"))
 
     def is_compile_needed(self, path) -> bool:
         if not self.as_object_path(path).exists():
@@ -116,25 +116,19 @@ class Builder:
 
         return False
 
-    def as_depend_path(self, path) -> Path:
-        return Path(
-            self.context[KEY_FOLDERS][KEY_FOLDERS_BUILD]
-            + "/"
-            + path[
-                len(self.context[KEY_FOLDERS][KEY_FOLDERS_SOURCE]) + 1 : path.rfind(".")
-            ]
-            + ".d"
-        )
+    def ignore_source_dir(self, path: Path) -> Path:
+        source = self.context[KEY_FOLDERS][KEY_FOLDERS_SOURCE]
+        return Path(str(path)[len(source) + 1 :])
 
-    def as_object_path(self, path) -> Path:
-        return Path(
-            self.context[KEY_FOLDERS][KEY_FOLDERS_BUILD]
-            + "/"
-            + path[
-                len(self.context[KEY_FOLDERS][KEY_FOLDERS_SOURCE]) + 1 : path.rfind(".")
-            ]
-            + ".o"
-        )
+    def get_path(self, path: Path, suffix: str) -> Path:
+        build = self.context[KEY_FOLDERS][KEY_FOLDERS_BUILD]
+        return Path(build) / self.ignore_source_dir(path).with_suffix(suffix)
+
+    def as_depend_path(self, path: Path) -> Path:
+        return self.get_path(path, ".d")
+
+    def as_object_path(self, path: Path) -> Path:
+        return self.get_path(path, ".o")
 
     def get_flag(self):
         flag = self.context[KEY_FLAGS][KEY_FLAGS_COMMON] + " "
@@ -149,13 +143,13 @@ class Builder:
         return flag
 
     # compile a source file
-    def compile(self, path: str):
-        # create sub folder
-        if "/" in path:
-            dirs = path.split("/")[:-1]
-            os.system(
-                f'mkdir -p {self.context[KEY_FOLDERS][KEY_FOLDERS_BUILD]}/{"/".join(dirs)}'
-            )
+    def compile(self, path: Path):
+        build = Path(self.context[KEY_FOLDERS][KEY_FOLDERS_BUILD])
+        build.mkdir(exist_ok=True)
+
+        # create sub folders
+        if len(list(self.ignore_source_dir(path).parents)) > 1:
+            (build / path.parent).mkdir(parents=True, exist_ok=True)
 
         cc = self.context[KEY_COMPILER]
         flag = self.get_flag()
@@ -203,10 +197,10 @@ class Builder:
 
 class Driver:
     def __init__(self, json_path: str):
-        self.builders = {}
+        self.builders: dict[str, Builder] = {}
 
-        with open(json_path, mode="r", encoding="utf-8") as fs:
-            tmp = json.loads(fs.read())
+        with Path(json_path).open(mode="r", encoding="utf-8") as fs:
+            tmp: dict[str, Any] = json.loads(fs.read())
 
             for k in tmp.keys():
                 self.builders[k] = Builder(k, tmp[k])
@@ -218,10 +212,10 @@ class Driver:
             builder.build()
 
 
-def main(argv):
+def main():
     d = Driver("build.json")
-
     d.build_all()
 
 
-exit(main(sys.argv))
+if __name__ == "__main__":
+    main()
