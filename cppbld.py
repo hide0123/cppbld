@@ -83,7 +83,7 @@ class Builder:
             self.context = dict_writer(g_default_context["executable"], ctx, True, True)  # type: ignore
 
         self.sources = self.get_all_sources()
-        self.output = Path(self.context[KEY_OUTPUT])
+        self.output = self.get_output()
 
     @staticmethod
     def get_dependencies(dfile: Path) -> list[str] | None:
