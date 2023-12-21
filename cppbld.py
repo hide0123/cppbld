@@ -2,7 +2,9 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
+
+Dict: TypeAlias = dict[str, Any]
 
 # name of output file
 KEY_OUTPUT = "output"
@@ -52,8 +54,8 @@ g_default_context = {
 
 
 def dict_writer(
-    dist: dict, src: dict, over_write: bool = False, mix: bool = False
-) -> dict:
+    dist: Dict, src: Dict, over_write: bool = False, mix: bool = False
+) -> Dict:
     for k in src.keys():
         if not over_write and k in dist.keys():
             continue
@@ -67,7 +69,7 @@ def dict_writer(
 
 
 class Builder:
-    def __init__(self, name: str, ctx: dict):
+    def __init__(self, name: str, ctx: Dict) -> None:
         self.name = name
         self.completed = False
         self.is_compiled = False
@@ -101,7 +103,7 @@ class Builder:
         path = Path(self.context[KEY_FOLDERS][KEY_FOLDERS_SOURCE])
         return list(path.glob("**/*.cpp"))
 
-    def is_compile_needed(self, path) -> bool:
+    def is_compile_needed(self, path: Path) -> bool:
         if not self.as_object_path(path).exists():
             return True
 
@@ -144,7 +146,7 @@ class Builder:
         return flag
 
     # compile a source file
-    def compile(self, path: Path):
+    def compile(self, path: Path) -> None:
         build = Path(self.context[KEY_FOLDERS][KEY_FOLDERS_BUILD])
         build.mkdir(exist_ok=True)
 
@@ -172,7 +174,7 @@ class Builder:
 
         self.is_compiled = True
 
-    def link(self):
+    def link(self) -> None:
         flag = self.context[KEY_FLAGS][KEY_FLAGS_LINKER]
 
         if self.context[KEY_DEBUG] == "true":
@@ -202,23 +204,23 @@ class Builder:
 
 
 class Driver:
-    def __init__(self, json_path: str):
+    def __init__(self, json_path: str) -> None:
         self.builders: dict[str, Builder] = {}
 
         with Path(json_path).open(mode="r", encoding="utf-8") as fs:
-            tmp: dict[str, Any] = json.loads(fs.read())
+            tmp: Dict = json.loads(fs.read())
 
             for k in tmp.keys():
                 self.builders[k] = Builder(k, tmp[k])
 
-    def build_all(self):
+    def build_all(self) -> None:
         for k in self.builders.keys():
             builder = self.builders[k]
 
             builder.build()
 
 
-def main():
+def main() -> None:
     d = Driver("build.json")
     d.build_all()
 
