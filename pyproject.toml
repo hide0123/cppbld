@@ -1,0 +1,7 @@
+[project]
+name = "cppbld"
+version = "0.1.0"
+description = "C++ Builder"
+
+[project.scripts]
+cppbld = "cppbld:main"
