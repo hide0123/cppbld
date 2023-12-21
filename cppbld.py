@@ -1,5 +1,6 @@
 import json
-import os
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -130,15 +131,15 @@ class Builder:
     def as_object_path(self, path: Path) -> Path:
         return self.get_path(path, ".o")
 
-    def get_flag(self):
-        flag = self.context[KEY_FLAGS][KEY_FLAGS_COMMON] + " "
+    def get_flag(self) -> list[str]:
+        flag = str(self.context[KEY_FLAGS][KEY_FLAGS_COMMON]).split(" ")
 
         if self.context[KEY_DEBUG] == "true":
-            flag += self.context[KEY_FLAGS][KEY_FLAGS_DEBUG]
+            flag.extend(str(self.context[KEY_FLAGS][KEY_FLAGS_DEBUG]).split(" "))
         else:
-            flag += self.context[KEY_FLAGS][KEY_FLAGS_RELEASE]
+            flag.extend(str(self.context[KEY_FLAGS][KEY_FLAGS_RELEASE]).split(" "))
 
-        flag += " -I" + self.context[KEY_FOLDERS][KEY_FOLDERS_INCLUDE]
+        flag.extend(["-I", self.context[KEY_FOLDERS][KEY_FOLDERS_INCLUDE]])
 
         return flag
 
@@ -163,7 +164,11 @@ class Builder:
             return
 
         print(path)
-        os.system(f"{cc} {flag} -MP -MMD -MF {dfile} -c -o {obj} {path}")
+        command = [cc, *flag, "-MP", "-MMD", "-MF", dfile, "-c", "-o", obj, path]
+        res = subprocess.run(command)
+
+        if res.returncode != 0:
+            sys.exit(res.returncode)
 
         self.is_compiled = True
 
@@ -179,9 +184,10 @@ class Builder:
             flag = "-Wl," + ",".join(flag)
 
         print("linking...")
-        os.system(
-            f'{self.context[KEY_COMPILER]} -o {self.output} {flag} {" ".join([str(self.as_object_path(x)) for x in self.sources])}'
-        )
+        command = [self.context[KEY_COMPILER], "-o", self.output, flag] + [
+            str(self.as_object_path(x)) for x in self.sources
+        ]
+        subprocess.run(command)
 
     def build(self) -> bool:
         for source in self.sources:
