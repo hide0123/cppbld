@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -91,13 +92,17 @@ class Builder:
 
         with dfile.open(mode="r") as fs:
             tmp = fs.read()
+            return tmp.split("\n")[0].split(":")[1].strip().split(" ")
 
-            if "\\" not in tmp:
-                tmp = tmp[: tmp.find("\n")]
-                return tmp[tmp.find(":") + 1 :].strip().split(" ")
+    def get_output(self) -> Path:
+        ext = ""
+        win_ext = ".exe"
+        output = str(self.context[KEY_OUTPUT])
 
-            tmp = tmp.replace(" \\\n  ", " ")
-            return tmp[tmp.find(":") + 2 : tmp.find("\n\n")].strip().split(" ")
+        if os.name == "nt" and not output.endswith(win_ext):
+            ext = win_ext
+
+        return Path(output + ext)
 
     def get_all_sources(self) -> list[Path]:
         path = Path(self.context[KEY_FOLDERS][KEY_FOLDERS_SOURCE])
