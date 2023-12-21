@@ -1,4 +1,9 @@
+__pycache__/
+.venv/
 build/
 dist/
+include/
 src/
+*.egg-info/
+
 build.json
