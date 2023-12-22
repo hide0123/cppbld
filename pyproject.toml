@@ -5,3 +5,6 @@ description = "C++ Builder"
 
 [project.scripts]
 cppbld = "cppbld:main"
+
+[tool.setuptools]
+py-modules = ["cppbld"]
