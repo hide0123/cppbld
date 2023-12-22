@@ -91,8 +91,16 @@ class Builder:
             return None
 
         with dfile.open(mode="r") as fs:
-            tmp = fs.read()
-            return tmp.split("\n")[0].split(":")[1].strip().split(" ")
+            tmp = fs.read().strip().replace("\\\n", "").split("\n")[0].split(": ")[1]
+            tmp2 = [ ]
+
+            i = 0
+            while " " in tmp:
+                i = tmp.find(" ")
+                tmp2.append(tmp[:i])
+                tmp = tmp[i + 1:].lstrip()
+
+            return tmp2 + [tmp]
 
     def get_output(self) -> Path:
         ext = ""
@@ -206,7 +214,6 @@ class Builder:
             print("Already up to date.")
 
         return True
-
 
 class Driver:
     def __init__(self, json_path: str) -> None:
