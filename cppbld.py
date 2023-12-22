@@ -92,13 +92,13 @@ class Builder:
 
         with dfile.open(mode="r") as fs:
             tmp = fs.read().strip().replace("\\\n", "").split("\n")[0].split(": ")[1]
-            tmp2 = [ ]
+            tmp2 = []
 
             i = 0
             while " " in tmp:
                 i = tmp.find(" ")
                 tmp2.append(tmp[:i])
-                tmp = tmp[i + 1:].lstrip()
+                tmp = tmp[i + 1 :].lstrip()
 
             return tmp2 + [tmp]
 
@@ -214,6 +214,7 @@ class Builder:
             print("Already up to date.")
 
         return True
+
 
 class Driver:
     def __init__(self, json_path: str) -> None:
