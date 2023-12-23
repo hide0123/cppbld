@@ -13,7 +13,7 @@ pip install -U git+https://github.com/hide0123/cppbld.git
 
 ```json
 {
-    "metro": {
+    "config_name": {
         "output": "project_name",
         "flags": {
             "common": "-std=c++20",
