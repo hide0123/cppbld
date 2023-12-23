@@ -4,8 +4,12 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any, TypeAlias
+import shutil
+import argparse
 
 Dict: TypeAlias = dict[str, Any]
+
+G_APP_VERSION       = "0.0.1"
 
 # name of output file
 KEY_OUTPUT = "output"
@@ -50,7 +54,7 @@ g_default_context = {
             },
         },
     },
-    """  """ "library": {},
+    "library": {},
 }
 
 
@@ -212,6 +216,9 @@ class Builder:
         ]
         subprocess.run(command)
 
+    #
+    # Let's build !
+    #
     def build(self) -> bool:
         for source in self.sources:
             self.compile(source)
@@ -223,6 +230,16 @@ class Builder:
 
         return True
 
+    #
+    # clean
+    #
+    def clean(self) -> None:
+        # remove output file
+        self.output.unlink(missing_ok=True)
+
+        # remove objects directory
+        if os.path.isdir(x := self.context[KEY_FOLDERS][KEY_FOLDERS_BUILD]):
+            shutil.rmtree(x)
 
 class Driver:
     def __init__(self, json_path: str) -> None:
@@ -239,11 +256,43 @@ class Driver:
             builder = self.builders[k]
 
             builder.build()
-
+            
+    def clean_all(self) -> None:
+        for k in self.builders.keys():
+            self.builders[k].clean()
 
 def main() -> None:
-    d = Driver("build.json")
-    d.build_all()
+    parser = argparse.ArgumentParser(description="build C++ sources.")
+    parser.add_argument("-clean", nargs="*")
+    parser.add_argument("-re", nargs="*")
+    parser.add_argument("-target", nargs="*")
+
+    args = parser.parse_args()
+
+    driver = Driver("build.json")
+
+    # clean
+    if args.clean == []:
+        # 名前指定なし => 全て削除
+        driver.clean_all()
+        return
+    elif args.clean != None:
+        # 名前指定ある => 指定されたやつだけ削除
+        for name in args.clean:
+            # 記述が見つからない => エラー
+            if name not in driver.builders.keys():
+                print(f"doensn't exists the context of '{name}' in build.json")
+                return
+
+            driver.builders[name].clean()
+
+        return
+
+    # re
+    if args.re:
+        driver.clean_all()
+
+    driver.build_all()
 
 
 if __name__ == "__main__":
