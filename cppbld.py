@@ -61,7 +61,12 @@ def dict_writer(
         if not over_write and k in dist.keys():
             continue
 
-        if mix and k in dist.keys() and type(dist[k]) is type(src[k]) is dict:
+        if (
+            mix
+            and k in dist.keys()
+            and isinstance(dist[k], dict)
+            and isinstance(src[k], dict)
+        ):
             dist[k] = dict_writer(dist[k], src[k], over_write, mix)
         else:
             dist[k] = src[k]
@@ -77,7 +82,10 @@ class Builder:
 
         if KEY_TYPE in ctx.keys():
             self.context = dict_writer(
-                g_default_context[ctx[KEY_TYPE]], ctx, True, True  # type: ignore
+                g_default_context[ctx[KEY_TYPE]],  # type: ignore
+                ctx,
+                True,
+                True,
             )
         else:
             self.context = dict_writer(g_default_context["executable"], ctx, True, True)  # type: ignore
