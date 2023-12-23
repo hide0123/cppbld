@@ -251,6 +251,13 @@ class Driver:
             for k in tmp.keys():
                 self.builders[k] = Builder(k, tmp[k])
 
+    def get_builder(self, name) -> Builder:
+        if name not in self.builders.keys():
+            print(f"doensn't exists the context of '{name}' in build.json")
+            exit()
+
+        return self.builders[name]
+
     def build_all(self) -> None:
         for k in self.builders.keys():
             builder = self.builders[k]
@@ -265,7 +272,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="build C++ sources.")
     parser.add_argument("-clean", nargs="*")
     parser.add_argument("-re", nargs="*")
-    parser.add_argument("-target", nargs="*")
+    parser.add_argument("-target", nargs="+")
 
     args = parser.parse_args()
 
@@ -279,20 +286,23 @@ def main() -> None:
     elif args.clean != None:
         # 名前指定ある => 指定されたやつだけ削除
         for name in args.clean:
-            # 記述が見つからない => エラー
-            if name not in driver.builders.keys():
-                print(f"doensn't exists the context of '{name}' in build.json")
-                return
-
-            driver.builders[name].clean()
+            driver.get_builder(name).clean()
 
         return
 
     # re
-    if args.re:
+    if args.re == []:
         driver.clean_all()
+    elif args.re != None:
+        for name in args.re:
+            driver.get_builder(name).clean()
 
-    driver.build_all()
+    # target
+    if args.target != None:
+        for name in args.target:
+            driver.get_builder(name).build()
+    else:
+        driver.build_all()
 
 
 if __name__ == "__main__":
