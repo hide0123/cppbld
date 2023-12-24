@@ -1,5 +1,3 @@
-import os
-import sys
 from typing import Any, TypeAlias
 
 Dict: TypeAlias = dict[str, Any]

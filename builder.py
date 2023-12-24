@@ -2,9 +2,8 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, TypeAlias
 import shutil
-from utils import *
+from utils import Dict, dict_writer
 
 # name of output file
 KEY_OUTPUT = "output"
