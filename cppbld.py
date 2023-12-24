@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import sys
+import concurrent.futures
 from pathlib import Path
 from typing import Any, TypeAlias
 import shutil
@@ -244,6 +245,7 @@ class Builder:
 class Driver:
     def __init__(self, json_path: str) -> None:
         self.builders: dict[str, Builder] = {}
+        self.is_thread = False
 
         with Path(json_path).open(mode="r", encoding="utf-8") as fs:
             tmp: Dict = json.loads(fs.read())
@@ -259,24 +261,33 @@ class Driver:
         return self.builders[name]
 
     def build_all(self) -> None:
-        for k in self.builders.keys():
-            builder = self.builders[k]
+        if self.is_thread:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                executor.map(Builder.build, [self.builders[k] for k in self.builders.keys()])
+        else:
+            for k in self.builders.keys():
+                self.builders[k].build()
 
-            builder.build()
-            
     def clean_all(self) -> None:
-        for k in self.builders.keys():
-            self.builders[k].clean()
+        if self.is_thread:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                executor.map(Builder.clean, [self.builders[k] for k in self.builders.keys()])
+        else:
+            for k in self.builders.keys():
+                self.builders[k].clean()
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="build C++ sources.")
     parser.add_argument("-clean", nargs="*")
     parser.add_argument("-re", nargs="*")
     parser.add_argument("-target", nargs="+")
+    parser.add_argument("-j", action="store_true")
 
     args = parser.parse_args()
 
     driver = Driver("build.json")
+
+    driver.is_thread = args.j
 
     # clean
     if args.clean == []:
