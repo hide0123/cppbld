@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "C++ Builder"
 
 [project.scripts]
-cppbld = "cppbld:main"
+cppbld = "cppbld.cli:main"
 
-[tool.setuptools]
-py-modules = ["cppbld"]
+[tool.setuptools.packages.find]

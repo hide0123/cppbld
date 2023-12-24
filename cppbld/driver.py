@@ -1,8 +1,9 @@
-import json
 import concurrent.futures
+import json
 from pathlib import Path
-from builder import Builder
-from utils import Dict
+
+from .builder import Builder
+from .utils import Dict
 
 
 #
@@ -33,8 +34,9 @@ class Driver:
     def build_all(self) -> None:
         if self.is_thread:
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                executor.map(Builder.build,
-                             [self.builders[k] for k in self.builders.keys()])
+                executor.map(
+                    Builder.build, [self.builders[k] for k in self.builders.keys()]
+                )
         else:
             for k in self.builders.keys():
                 self.builders[k].build()
@@ -42,8 +44,9 @@ class Driver:
     def clean_all(self) -> None:
         if self.is_thread:
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                executor.map(Builder.clean,
-                             [self.builders[k] for k in self.builders.keys()])
+                executor.map(
+                    Builder.clean, [self.builders[k] for k in self.builders.keys()]
+                )
         else:
             for k in self.builders.keys():
                 self.builders[k].clean()
