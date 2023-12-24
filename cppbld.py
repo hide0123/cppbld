@@ -25,28 +25,34 @@ KEY_COMPILER = "cc"         # compiler path
 
 # folders
 KEY_FOLDERS = "folders"
+KEY_FOLDERS_TOPDIR = ""
 KEY_FOLDERS_BUILD = "build"
 KEY_FOLDERS_INCLUDE = "include"
 KEY_FOLDERS_SOURCE = "source"
 
 # flags
-KEY_FLAGS = "flags"
-KEY_FLAGS_COMMON = "common"
-KEY_FLAGS_DEBUG = "debug"
-KEY_FLAGS_RELEASE = "release"
-KEY_FLAGS_LINKER = "[linker]"
+KEY_FLAGS           = "flags"
+KEY_FLAGS_COMMON    = "common"
+KEY_FLAGS_DEBUG     = "debug"
+KEY_FLAGS_RELEASE   = "release"
+KEY_FLAGS_LINKER    = "[linker]"
+
+# constant values
+VALUE_TYPE_EXECUTABLE   = "executable"
+VALUE_TYPE_LIBRARY      = "library"
 
 #
 # Default contexts.
 #
 g_default_context = {
     "executable": {
-        KEY_OUTPUT: "",
-        KEY_TYPE: "executable",
+        KEY_OUTPUT: "a.out",
+        KEY_TYPE: VALUE_TYPE_EXECUTABLE,
         KEY_DEBUG: "false",
         KEY_DEPENDS: [],
         KEY_COMPILER: "g++",
         KEY_FOLDERS: {
+            KEY_FOLDERS_TOPDIR: "",
             KEY_FOLDERS_BUILD: "build",
             KEY_FOLDERS_INCLUDE: "include",
             KEY_FOLDERS_SOURCE: "src",
@@ -62,7 +68,22 @@ g_default_context = {
         },
     },
     "library": {
-        # todo
+        KEY_OUTPUT: "lib.a",
+        KEY_TYPE: VALUE_TYPE_LIBRARY,
+        KEY_DEBUG: "false",
+        KEY_DEPENDS: [],
+        KEY_COMPILER: "g++",
+        KEY_FOLDERS: {
+            KEY_FOLDERS_TOPDIR: "lib",
+            KEY_FOLDERS_BUILD: "build",
+            KEY_FOLDERS_INCLUDE: "include",
+            KEY_FOLDERS_SOURCE: "src",
+        },
+        KEY_FLAGS: {
+            KEY_FLAGS_COMMON: "-std=c++20",
+            KEY_FLAGS_RELEASE: "-O3",
+            KEY_FLAGS_DEBUG: "-O0 -g",
+        },
     },
 }
 
@@ -131,14 +152,20 @@ class Builder:
             return tmp2 + [tmp]
 
     def get_output(self) -> Path:
-        ext = ""
-        win_ext = ".exe"
         output = str(self.context[KEY_OUTPUT])
+        
+        # if running on Windows, change extension
+        if self.context[KEY_TYPE] == VALUE_TYPE_EXECUTABLE:
+            win_ext = ".exe"
 
-        if os.name == "nt" and not output.endswith(win_ext):
-            ext = win_ext
+            if os.name == "nt" and not output.endswith(win_ext):
+                output += win_ext
+        # if library
+        elif self.context[KEY_TYPE] == VALUE_TYPE_LIBRARY:
+            if not output.endswith(".a"):
+                output += ".a"
 
-        return Path(output + ext)
+        return Path(output)
 
     def get_all_sources(self) -> list[Path]:
         path = Path(self.context[KEY_FOLDERS][KEY_FOLDERS_SOURCE])
@@ -201,8 +228,6 @@ class Builder:
         dfile = self.as_depend_path(path)
         obj = self.as_object_path(path)
 
-        # depends = self.get_dependencies(dfile)
-
         if not self.is_compile_needed(path):
             return
 
@@ -227,9 +252,15 @@ class Builder:
             flag = "-Wl," + ",".join(flag)
 
         print("linking...")
-        command = [self.context[KEY_COMPILER], "-o", self.output, flag] + [
-            str(self.as_object_path(x)) for x in self.sources
-        ]
+
+        command = []
+        objects = [str(self.as_object_path(x)) for x in self.sources]
+
+        if self.context[KEY_TYPE] == VALUE_TYPE_EXECUTABLE:
+            command = [self.context[KEY_COMPILER], "-o", self.output, flag] + objects
+        elif self.context[KEY_TYPE] == VALUE_TYPE_LIBRARY:
+            command = ["ar", "rcs", self.output] + objects
+
         subprocess.run(command)
 
     #
@@ -257,6 +288,9 @@ class Builder:
         if os.path.isdir(x := self.context[KEY_FOLDERS][KEY_FOLDERS_BUILD]):
             shutil.rmtree(x)
 
+#
+# Driver
+#
 class Driver:
     def __init__(self, json_path: str) -> None:
         self.builders: dict[str, Builder] = {}
@@ -297,6 +331,7 @@ class Driver:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="build C++ sources.")
+    parser.add_argument("--dump-config")
     parser.add_argument("-clean", nargs="*")
     parser.add_argument("-re", nargs="*")
     parser.add_argument("-target", nargs="+")
@@ -304,8 +339,16 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    driver = Driver("build.json")
+    # dump config
+    if args.dump_config is not None:
+        if args.dump_config not in g_default_context.keys():
+            print(f"{args.dump_config} is not config type")
+        else:
+            print(json.dumps(g_default_context[args.dump_config], indent=4))
 
+        return
+
+    driver = Driver("build.json")
     driver.is_thread = args.j
 
     # clean
