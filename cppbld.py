@@ -32,7 +32,7 @@ def main() -> None:
         # 名前指定なし => 全て削除
         driver.clean_all()
         return
-    elif args.clean != None:
+    elif args.clean is not None:
         # 名前指定ある => 指定されたやつだけ削除
         for name in args.clean:
             driver.get_builder(name).clean()
@@ -42,12 +42,12 @@ def main() -> None:
     # re
     if args.re == []:
         driver.clean_all()
-    elif args.re != None:
+    elif args.re is not None:
         for name in args.re:
             driver.get_builder(name).clean()
 
     # target
-    if args.target != None:
+    if args.target is not None:
         for name in args.target:
             driver.get_builder(name).build()
     else:
