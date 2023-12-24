@@ -2,10 +2,15 @@ import json
 import os
 import subprocess
 import sys
+import concurrent.futures
 from pathlib import Path
 from typing import Any, TypeAlias
+import shutil
+import argparse
 
 Dict: TypeAlias = dict[str, Any]
+
+G_APP_VERSION       = "0.0.1"
 
 # name of output file
 KEY_OUTPUT = "output"
@@ -50,7 +55,7 @@ g_default_context = {
             },
         },
     },
-    """  """ "library": {},
+    "library": {},
 }
 
 
@@ -212,6 +217,9 @@ class Builder:
         ]
         subprocess.run(command)
 
+    #
+    # Let's build !
+    #
     def build(self) -> bool:
         for source in self.sources:
             self.compile(source)
@@ -223,10 +231,21 @@ class Builder:
 
         return True
 
+    #
+    # clean
+    #
+    def clean(self) -> None:
+        # remove output file
+        self.output.unlink(missing_ok=True)
+
+        # remove objects directory
+        if os.path.isdir(x := self.context[KEY_FOLDERS][KEY_FOLDERS_BUILD]):
+            shutil.rmtree(x)
 
 class Driver:
     def __init__(self, json_path: str) -> None:
         self.builders: dict[str, Builder] = {}
+        self.is_thread = False
 
         with Path(json_path).open(mode="r", encoding="utf-8") as fs:
             tmp: Dict = json.loads(fs.read())
@@ -234,16 +253,67 @@ class Driver:
             for k in tmp.keys():
                 self.builders[k] = Builder(k, tmp[k])
 
+    def get_builder(self, name) -> Builder:
+        if name not in self.builders.keys():
+            print(f"doensn't exists the context of '{name}' in build.json")
+            exit()
+
+        return self.builders[name]
+
     def build_all(self) -> None:
-        for k in self.builders.keys():
-            builder = self.builders[k]
+        if self.is_thread:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                executor.map(Builder.build, [self.builders[k] for k in self.builders.keys()])
+        else:
+            for k in self.builders.keys():
+                self.builders[k].build()
 
-            builder.build()
-
+    def clean_all(self) -> None:
+        if self.is_thread:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                executor.map(Builder.clean, [self.builders[k] for k in self.builders.keys()])
+        else:
+            for k in self.builders.keys():
+                self.builders[k].clean()
 
 def main() -> None:
-    d = Driver("build.json")
-    d.build_all()
+    parser = argparse.ArgumentParser(description="build C++ sources.")
+    parser.add_argument("-clean", nargs="*")
+    parser.add_argument("-re", nargs="*")
+    parser.add_argument("-target", nargs="+")
+    parser.add_argument("-j", action="store_true")
+
+    args = parser.parse_args()
+
+    driver = Driver("build.json")
+
+    driver.is_thread = args.j
+
+    # clean
+    if args.clean == []:
+        # 名前指定なし => 全て削除
+        driver.clean_all()
+        return
+    elif args.clean != None:
+        # 名前指定ある => 指定されたやつだけ削除
+        for name in args.clean:
+            driver.get_builder(name).clean()
+
+        return
+
+    # re
+    if args.re == []:
+        driver.clean_all()
+    elif args.re != None:
+        for name in args.re:
+            driver.get_builder(name).clean()
+
+    # target
+    if args.target != None:
+        for name in args.target:
+            driver.get_builder(name).build()
+    else:
+        driver.build_all()
 
 
 if __name__ == "__main__":
