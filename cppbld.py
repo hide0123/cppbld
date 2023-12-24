@@ -18,21 +18,27 @@ KEY_OUTPUT = "output"
 # file type of output: 'executable' or 'library'
 KEY_TYPE = "type"
 
-KEY_DEBUG = "false"
-KEY_DEPENDS = "depends"
-KEY_COMPILER = "cc"
+# Builder options.
+KEY_DEBUG = "false"         # build as debug
+KEY_DEPENDS = "depends"     # depend binaries
+KEY_COMPILER = "cc"         # compiler path
 
+# folders
 KEY_FOLDERS = "folders"
 KEY_FOLDERS_BUILD = "build"
 KEY_FOLDERS_INCLUDE = "include"
 KEY_FOLDERS_SOURCE = "source"
 
+# flags
 KEY_FLAGS = "flags"
 KEY_FLAGS_COMMON = "common"
 KEY_FLAGS_DEBUG = "debug"
 KEY_FLAGS_RELEASE = "release"
 KEY_FLAGS_LINKER = "[linker]"
 
+#
+# Default contexts.
+#
 g_default_context = {
     "executable": {
         KEY_OUTPUT: "",
@@ -55,10 +61,15 @@ g_default_context = {
             },
         },
     },
-    "library": {},
+    "library": {
+        # todo
+    },
 }
 
-
+#
+# dict_writer:
+#   overwrite or mix a dictionaries
+#
 def dict_writer(
     dist: Dict, src: Dict, over_write: bool = False, mix: bool = False
 ) -> Dict:
@@ -79,6 +90,10 @@ def dict_writer(
     return dist
 
 
+#
+# Builder:
+#   Interface of building from a context
+#
 class Builder:
     def __init__(self, name: str, ctx: Dict) -> None:
         self.name = name
@@ -247,11 +262,15 @@ class Driver:
         self.builders: dict[str, Builder] = {}
         self.is_thread = False
 
-        with Path(json_path).open(mode="r", encoding="utf-8") as fs:
-            tmp: Dict = json.loads(fs.read())
+        try:
+            with Path(json_path).open(mode="r", encoding="utf-8") as fs:
+                tmp: Dict = json.loads(fs.read())
 
-            for k in tmp.keys():
-                self.builders[k] = Builder(k, tmp[k])
+                for k in tmp.keys():
+                    self.builders[k] = Builder(k, tmp[k])
+        except FileNotFoundError:
+            print("'build.json' is not found in current directory.")
+            exit(1)
 
     def get_builder(self, name) -> Builder:
         if name not in self.builders.keys():
