@@ -24,15 +24,15 @@ KEY_FOLDERS_INCLUDE = "include"
 KEY_FOLDERS_SOURCE = "source"
 
 # flags
-KEY_FLAGS           = "flags"
-KEY_FLAGS_COMMON    = "common"
-KEY_FLAGS_DEBUG     = "debug"
-KEY_FLAGS_RELEASE   = "release"
-KEY_FLAGS_LINKER    = "[linker]"
+KEY_FLAGS = "flags"
+KEY_FLAGS_COMMON = "common"
+KEY_FLAGS_DEBUG = "debug"
+KEY_FLAGS_RELEASE = "release"
+KEY_FLAGS_LINKER = "[linker]"
 
 # constant values
-VALUE_TYPE_EXECUTABLE   = "executable"
-VALUE_TYPE_LIBRARY      = "library"
+VALUE_TYPE_EXECUTABLE = "executable"
+VALUE_TYPE_LIBRARY = "library"
 
 #
 # Default contexts.
@@ -80,6 +80,7 @@ g_default_context = {
     },
 }
 
+
 #
 # Builder:
 #   Interface of building from a context
@@ -98,7 +99,8 @@ class Builder:
                 True,
             )
         else:
-            self.context = dict_writer(g_default_context["executable"], ctx, True, True)  # type: ignore
+            self.context = dict_writer(
+                g_default_context["executable"], ctx, True, True)
 
         self.sources = self.get_all_sources()
         self.output = self.get_output()
@@ -113,14 +115,15 @@ class Builder:
             return None
 
         with dfile.open(mode="r") as fs:
-            tmp = fs.read().strip().replace("\\\n", "").split("\n")[0].split(": ")[1]
+            tmp = fs.read().strip() \
+                    .replace("\\\n", "").split("\n")[0].split(": ")[1]
             tmp2 = []
 
             i = 0
             while " " in tmp:
                 i = tmp.find(" ")
                 tmp2.append(tmp[:i])
-                tmp = tmp[i + 1 :].lstrip()
+                tmp = tmp[i + 1:].lstrip()
 
             return tmp2 + [tmp]
 
@@ -162,7 +165,7 @@ class Builder:
 
     def ignore_source_dir(self, path: Path) -> Path:
         source = self.context[KEY_FOLDERS][KEY_FOLDERS_SOURCE]
-        return Path(str(path)[len(source) + 1 :])
+        return Path(str(path)[len(source) + 1:])
 
     def get_path(self, path: Path, suffix: str) -> Path:
         build = self.context[KEY_FOLDERS][KEY_FOLDERS_BUILD]
@@ -175,12 +178,13 @@ class Builder:
         return self.get_path(path, ".o")
 
     def get_flag(self) -> list[str]:
-        flag = str(self.context[KEY_FLAGS][KEY_FLAGS_COMMON]).split(" ")
+        ctx = self.context[KEY_FLAGS]
+        flag = str(ctx[KEY_FLAGS_COMMON]).split(" ")
 
         if self.context[KEY_DEBUG] == "true":
-            flag.extend(str(self.context[KEY_FLAGS][KEY_FLAGS_DEBUG]).split(" "))
+            flag.extend(str(ctx[KEY_FLAGS_DEBUG]).split(" "))
         else:
-            flag.extend(str(self.context[KEY_FLAGS][KEY_FLAGS_RELEASE]).split(" "))
+            flag.extend(str(ctx[KEY_FLAGS_RELEASE]).split(" "))
 
         flag.extend(["-I", self.context[KEY_FOLDERS][KEY_FOLDERS_INCLUDE]])
 
@@ -205,7 +209,8 @@ class Builder:
             return
 
         print(path)
-        command = [cc, *flag, "-MP", "-MMD", "-MF", dfile, "-c", "-o", obj, path]
+        command = [cc, *flag,
+                   "-MP", "-MMD", "-MF", dfile, "-c", "-o", obj, path]
         res = subprocess.run(command)
 
         if res.returncode != 0:
@@ -230,7 +235,8 @@ class Builder:
         objects = [str(self.as_object_path(x)) for x in self.sources]
 
         if self.context[KEY_TYPE] == VALUE_TYPE_EXECUTABLE:
-            command = [self.context[KEY_COMPILER], "-o", self.output, flag] + objects
+            command = \
+                [self.context[KEY_COMPILER], "-o", self.output, flag] + objects
         elif self.context[KEY_TYPE] == VALUE_TYPE_LIBRARY:
             command = ["ar", "rcs", self.output] + objects
 

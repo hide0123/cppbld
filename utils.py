@@ -2,6 +2,7 @@ from typing import Any, TypeAlias
 
 Dict: TypeAlias = dict[str, Any]
 
+
 #
 # dict_writer:
 #   overwrite or mix a dictionaries

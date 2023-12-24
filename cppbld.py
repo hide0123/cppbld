@@ -3,7 +3,8 @@ import argparse
 from builder import Builder
 from driver import Driver
 
-G_APP_VERSION       = "0.0.1"
+G_APP_VERSION = "0.0.1"
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="build C++ sources.")
@@ -20,7 +21,8 @@ def main() -> None:
         if args.dump_config not in Builder.get_default_context().keys():
             print(f"{args.dump_config} is not config type")
         else:
-            print(json.dumps(Builder.get_default_context()[args.dump_config], indent=4))
+            print(json.dumps(
+                Builder.get_default_context()[args.dump_config], indent=4))
 
         return
 
