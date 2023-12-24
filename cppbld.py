@@ -1,7 +1,7 @@
 import json
 import argparse
-from driver import *
-from builder import *
+from builder import Builder
+from driver import Driver
 
 G_APP_VERSION       = "0.0.1"
 
