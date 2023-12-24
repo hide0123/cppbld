@@ -25,4 +25,3 @@ def dict_writer(
             dist[k] = src[k]
 
     return dist
-

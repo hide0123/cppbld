@@ -93,7 +93,7 @@ class Builder:
 
         if KEY_TYPE in ctx.keys():
             self.context = dict_writer(
-                g_default_context[ctx[KEY_TYPE]],  # type: ignore
+                g_default_context[ctx[KEY_TYPE]],
                 ctx,
                 True,
                 True,
@@ -129,7 +129,7 @@ class Builder:
 
     def get_output(self) -> Path:
         output = str(self.context[KEY_OUTPUT])
-        
+
         # if running on Windows, change extension
         if self.context[KEY_TYPE] == VALUE_TYPE_EXECUTABLE:
             win_ext = ".exe"
