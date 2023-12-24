@@ -1,9 +1,10 @@
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
-import shutil
-from utils import Dict, dict_writer
+
+from .utils import Dict, dict_writer
 
 # name of output file
 KEY_OUTPUT = "output"
@@ -12,9 +13,9 @@ KEY_OUTPUT = "output"
 KEY_TYPE = "type"
 
 # Builder options.
-KEY_DEBUG = "false"         # build as debug
-KEY_DEPENDS = "depends"     # depend binaries
-KEY_COMPILER = "cc"         # compiler path
+KEY_DEBUG = "false"  # build as debug
+KEY_DEPENDS = "depends"  # depend binaries
+KEY_COMPILER = "cc"  # compiler path
 
 # folders
 KEY_FOLDERS = "folders"
@@ -99,8 +100,7 @@ class Builder:
                 True,
             )
         else:
-            self.context = dict_writer(
-                g_default_context["executable"], ctx, True, True)
+            self.context = dict_writer(g_default_context["executable"], ctx, True, True)
 
         self.sources = self.get_all_sources()
         self.output = self.get_output()
@@ -115,15 +115,14 @@ class Builder:
             return None
 
         with dfile.open(mode="r") as fs:
-            tmp = fs.read().strip() \
-                    .replace("\\\n", "").split("\n")[0].split(": ")[1]
+            tmp = fs.read().strip().replace("\\\n", "").split("\n")[0].split(": ")[1]
             tmp2 = []
 
             i = 0
             while " " in tmp:
                 i = tmp.find(" ")
                 tmp2.append(tmp[:i])
-                tmp = tmp[i + 1:].lstrip()
+                tmp = tmp[i + 1 :].lstrip()
 
             return tmp2 + [tmp]
 
@@ -165,7 +164,7 @@ class Builder:
 
     def ignore_source_dir(self, path: Path) -> Path:
         source = self.context[KEY_FOLDERS][KEY_FOLDERS_SOURCE]
-        return Path(str(path)[len(source) + 1:])
+        return Path(str(path)[len(source) + 1 :])
 
     def get_path(self, path: Path, suffix: str) -> Path:
         build = self.context[KEY_FOLDERS][KEY_FOLDERS_BUILD]
@@ -209,8 +208,7 @@ class Builder:
             return
 
         print(path)
-        command = [cc, *flag,
-                   "-MP", "-MMD", "-MF", dfile, "-c", "-o", obj, path]
+        command = [cc, *flag, "-MP", "-MMD", "-MF", dfile, "-c", "-o", obj, path]
         res = subprocess.run(command)
 
         if res.returncode != 0:
@@ -235,8 +233,7 @@ class Builder:
         objects = [str(self.as_object_path(x)) for x in self.sources]
 
         if self.context[KEY_TYPE] == VALUE_TYPE_EXECUTABLE:
-            command = \
-                [self.context[KEY_COMPILER], "-o", self.output, flag] + objects
+            command = [self.context[KEY_COMPILER], "-o", self.output, flag] + objects
         elif self.context[KEY_TYPE] == VALUE_TYPE_LIBRARY:
             command = ["ar", "rcs", self.output] + objects
 
