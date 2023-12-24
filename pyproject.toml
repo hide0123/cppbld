@@ -7,3 +7,6 @@ description = "C++ Builder"
 cppbld = "cppbld.cli:main"
 
 [tool.setuptools.packages.find]
+
+[tool.ruff]
+select = ["E", "F", "I"]
