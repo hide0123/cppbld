@@ -4,7 +4,7 @@ C++ builder
 ## Installation
 
 ```bash
-pip install -U git+https://github.com/hide0123/cppbld.git
+pip install -U git+https://github.com/super9s/cppbuilder.git
 ```
 
 ## Usage
